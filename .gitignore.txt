@@ -1,0 +1,17 @@
+# Bỏ qua thư viện nặng
+node_modules/
+*/node_modules/
+
+# Bỏ qua file chứa mật khẩu, API Key
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Bỏ qua file build của Frontend
+dist/
+build/
+
+# Bỏ qua file hệ thống
+.DS_Store
