@@ -136,3 +136,98 @@ exports.getRoomTenants = async (req, res) => {
     res.status(500).json({ message: "Lỗi lấy danh sách khách", error: error.message });
   }
 };
+
+// API: Lấy tất cả tenants với filter và search
+exports.getAllTenants = async (req, res) => {
+  try {
+    const { 
+      status,        // "current" | "left" | "all"
+      roomId,        // ID phòng cụ thể
+      search,        // Tìm kiếm theo tên, SĐT, quê quán
+      startDateFrom, // Ngày vào từ
+      startDateTo,   // Ngày vào đến
+      endDateFrom,   // Ngày rời từ
+      endDateTo      // Ngày rời đến
+    } = req.query;
+
+    // Xây dựng query
+    let query = {};
+
+    // Filter theo trạng thái
+    if (status === "current") {
+      query.hasLeft = false;
+    } else if (status === "left") {
+      query.hasLeft = true;
+    }
+    // Nếu status === "all" hoặc không có, lấy tất cả
+
+    // Filter theo phòng
+    if (roomId) {
+      query.room = roomId;
+    }
+
+    // Filter theo ngày vào
+    if (startDateFrom || startDateTo) {
+      query.startDate = {};
+      if (startDateFrom) {
+        query.startDate.$gte = new Date(startDateFrom);
+      }
+      if (startDateTo) {
+        const toDate = new Date(startDateTo);
+        toDate.setHours(23, 59, 59, 999); // Đến cuối ngày
+        query.startDate.$lte = toDate;
+      }
+    }
+
+    // Filter theo ngày rời
+    if (endDateFrom || endDateTo) {
+      query.endDate = {};
+      if (endDateFrom) {
+        query.endDate.$gte = new Date(endDateFrom);
+      }
+      if (endDateTo) {
+        const toDate = new Date(endDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        query.endDate.$lte = toDate;
+      }
+    }
+
+    // Tìm kiếm theo tên, SĐT, quê quán
+    if (search) {
+      query.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } },
+        { hometown: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    // Lấy dữ liệu với populate room
+    const tenants = await Tenant.find(query)
+      .populate("room", "name floor")
+      .sort({ createdAt: -1 }); // Mới nhất lên đầu
+
+    // Tính số ngày ở cho mỗi tenant
+    const tenantsWithDays = tenants.map(tenant => {
+      const tenantObj = tenant.toObject();
+      const startDate = new Date(tenant.startDate);
+      let daysStayed = 0;
+
+      if (tenant.hasLeft && tenant.endDate) {
+        const endDate = new Date(tenant.endDate);
+        daysStayed = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+      } else {
+        // Nếu chưa rời, tính từ ngày vào đến hiện tại
+        const now = new Date();
+        daysStayed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+      }
+
+      tenantObj.daysStayed = daysStayed;
+      return tenantObj;
+    });
+
+    res.json(tenantsWithDays);
+  } catch (error) {
+    console.error("Error getting all tenants:", error);
+    res.status(500).json({ message: "Lỗi lấy danh sách khách", error: error.message });
+  }
+};

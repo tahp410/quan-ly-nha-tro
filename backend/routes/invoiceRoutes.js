@@ -5,7 +5,7 @@ const invoiceController = require("../controllers/invoiceController");
 router.post("/create", invoiceController.createInvoice);
 router.get("/by-month", invoiceController.getInvoicesByMonth);
 router.get("/summary/month", invoiceController.getPaymentSummaryByMonth);
-router.get("/:key", invoiceController.getInvoiceByKey);
+// Lưu ý: Route GET /:key đã được tách ra thành route công khai trong server.js
 router.put("/:id/pay", invoiceController.updatePaymentStatus);
 router.get("/room/:roomId", invoiceController.getRoomHistory);
 module.exports = router;

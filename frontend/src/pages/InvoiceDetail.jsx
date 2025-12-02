@@ -9,8 +9,8 @@ const InvoiceDetail = () => {
   const [loading, setLoading] = useState(true);
 
   // Thông tin tài khoản ngân hàng của bạn
-  const BANK_ID = "TECHCOMBANK"; 
-  const ACCOUNT_NO = "19036832726015"; 
+  const BANK_ID = "TPB"; 
+  const ACCOUNT_NO = "07374855601"; 
   const ACCOUNT_NAME = "Do Dang Phat"; 
 
   useEffect(() => {

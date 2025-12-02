@@ -4,6 +4,7 @@ import InvoiceDetail from "./pages/InvoiceDetail";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import RoomDetail from "./pages/RoomDetail";
+import TenantList from "./pages/TenantList";
 
 // Component bảo vệ: Nếu có token thì cho qua, không thì đá về Login
 const PrivateRoute = ({ children }) => {
@@ -46,6 +47,16 @@ function App() {
           element={
             <PrivateRoute>
               <RoomDetail />
+            </PrivateRoute>
+          } 
+        />
+
+        {/* Trang Quản lý tất cả khách hàng */}
+        <Route 
+          path="/tenants" 
+          element={
+            <PrivateRoute>
+              <TenantList />
             </PrivateRoute>
           } 
         />

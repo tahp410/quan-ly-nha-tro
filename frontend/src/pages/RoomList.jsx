@@ -110,6 +110,14 @@ const RoomList = () => {
               📊 Báo Cáo
             </button>
 
+            {/* Nút Quản Lý Khách Hàng */}
+            <button 
+              onClick={() => navigate("/tenants")}
+              className="bg-green-100 text-green-700 border border-green-200 px-3 py-2 rounded-lg hover:bg-green-200 text-sm font-bold shadow-sm"
+            >
+              👥 Khách Hàng
+            </button>
+
             {/* Nút Cài Đặt */}
             <button 
               onClick={() => setIsConfigModalOpen(true)}

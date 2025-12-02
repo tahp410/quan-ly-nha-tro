@@ -9,6 +9,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Route công khai: Xem hóa đơn bằng key (không cần đăng nhập)
+app.get("/api/invoices/:key", require("./controllers/invoiceController").getInvoiceByKey);
+
 // Các route bắt buộc đăng nhập (JWT)
 app.use("/api/rooms", authMiddleware, require("./routes/roomRoutes"));
 app.use("/api/tenants", authMiddleware, require("./routes/tenantRoutes"));

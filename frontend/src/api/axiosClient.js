@@ -18,12 +18,16 @@ axiosClient.interceptors.request.use((config) => {
 });
 
 // Xử lý khi Token hết hạn (401) -> Đá về trang login
+// Lưu ý: Không redirect nếu đang ở trang bill công khai
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Không redirect nếu đang xem bill công khai (route /bill/:key)
+      if (!window.location.pathname.startsWith('/bill/')) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

@@ -9,6 +9,7 @@ const TenantSchema = new mongoose.Schema(
 
     room: { type: mongoose.Schema.Types.ObjectId, ref: "Room" },
     startDate: { type: Date, default: Date.now },
+    endDate: { type: Date, default: null }, // Ngày khách rời phòng
 
     hasLeft: { type: Boolean, default: false }
   },
