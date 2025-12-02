@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import axiosClient from "../api/axiosClient";
 
-const BillModal = ({ isOpen, onClose, room, onSuccess }) => {
+const BillModal = ({ isOpen, onClose, room, onSuccess, invoiceToEdit = null }) => {
   const [newElec, setNewElec] = useState("");
   const [newWater, setNewWater] = useState("");
   const [extraFee, setExtraFee] = useState(0); // --- MỚI: State lưu phụ phí ---
@@ -11,31 +11,53 @@ const BillModal = ({ isOpen, onClose, room, onSuccess }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (room) {
+    if (!room) return;
+
+    if (invoiceToEdit) {
+      // Mode sửa hóa đơn: lấy dữ liệu từ hóa đơn cũ
+      setMonth(invoiceToEdit.month || "");
+      setNewElec(invoiceToEdit.electricity?.new ?? "");
+      setNewWater(invoiceToEdit.water?.new ?? "");
+      setExtraFee(invoiceToEdit.additionalFees ?? 0);
+      setSelectedTenant(invoiceToEdit.tenant?._id || "");
+    } else {
+      // Mode tạo mới hóa đơn
+      setMonth("12/2025");
       setNewElec(room.lastReadings?.electricity || 0);
       setNewWater(room.lastReadings?.water || 0);
       setExtraFee(0); // Reset phụ phí về 0 mỗi khi mở form
       const firstTenant = room.currentTenants?.[0]?._id || "";
       setSelectedTenant(firstTenant);
     }
-  }, [room]);
+  }, [room, invoiceToEdit]);
 
   if (!isOpen || !room) return null;
 
   const handleSubmit = async () => {
     try {
       setLoading(true);
-      
-      await axiosClient.post("/invoices/create", {
-        roomId: room._id,
-        month: month,
-        newElec: Number(newElec),
-        newWater: Number(newWater),
-        additionalFees: Number(extraFee), // --- Gửi phụ phí lên server ---
-        tenantId: selectedTenant || undefined
-      });
 
-      alert("Lập hóa đơn thành công!");
+      if (invoiceToEdit) {
+        // Gọi API sửa hóa đơn
+        await axiosClient.put(`/invoices/${invoiceToEdit._id}`, {
+          newElec: Number(newElec),
+          newWater: Number(newWater),
+          additionalFees: Number(extraFee),
+        });
+        alert("Cập nhật hóa đơn thành công!");
+      } else {
+        // Gọi API tạo mới hóa đơn
+        await axiosClient.post("/invoices/create", {
+          roomId: room._id,
+          month: month,
+          newElec: Number(newElec),
+          newWater: Number(newWater),
+          additionalFees: Number(extraFee), // --- Gửi phụ phí lên server ---
+          tenantId: selectedTenant || undefined,
+        });
+        alert("Lập hóa đơn thành công!");
+      }
+
       onSuccess();
       onClose();
     } catch (error) {
@@ -49,7 +71,8 @@ const BillModal = ({ isOpen, onClose, room, onSuccess }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
         <h2 className="text-xl font-bold text-blue-800 mb-4">
-          Tính tiền phòng {room.name}
+          {invoiceToEdit ? "Sửa hóa đơn phòng " : "Tính tiền phòng "}
+          {room.name}
         </h2>
 
         {/* Nhập tháng */}

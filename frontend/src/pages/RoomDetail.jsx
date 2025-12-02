@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosClient from "../api/axiosClient";
+import BillModal from "../components/BillModal";
 
 const RoomDetail = () => {
   const { id } = useParams();
@@ -10,8 +11,9 @@ const RoomDetail = () => {
   const [tenants, setTenants] = useState({ current: [], history: [] });
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("current"); // "current" | "history" | "invoices"
-  
   const [editForm, setEditForm] = useState({ name: "", basePrice: 0, floor: 1 });
+  const [invoiceToEdit, setInvoiceToEdit] = useState(null);
+  const [isBillModalOpen, setIsBillModalOpen] = useState(false);
 
   const loadData = async () => {
     try {
@@ -306,7 +308,8 @@ const RoomDetail = () => {
                           <th className="px-4 py-3">Nước (khối)</th>
                           <th className="px-4 py-3">Tổng Tiền</th>
                           <th className="px-4 py-3">Trạng thái</th>
-                          <th className="px-4 py-3">Xem</th>
+                        <th className="px-4 py-3">Xem</th>
+                        <th className="px-4 py-3">Sửa</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -333,6 +336,21 @@ const RoomDetail = () => {
                               >
                                 Xem Bill
                               </a>
+                            </td>
+                            <td className="px-4 py-3">
+                              {inv.status !== "PAID" ? (
+                                <button
+                                  onClick={() => {
+                                    setInvoiceToEdit(inv);
+                                    setIsBillModalOpen(true);
+                                  }}
+                                  className="text-orange-600 hover:underline text-sm font-medium"
+                                >
+                                  Sửa
+                                </button>
+                              ) : (
+                                <span className="text-gray-400 text-xs">Đã thu</span>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -402,6 +420,20 @@ const RoomDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Modal Sửa/Tạo hóa đơn */}
+      {isBillModalOpen && (
+        <BillModal
+          isOpen={isBillModalOpen}
+          onClose={() => {
+            setIsBillModalOpen(false);
+            setInvoiceToEdit(null);
+          }}
+          room={room}
+          invoiceToEdit={invoiceToEdit}
+          onSuccess={loadData}
+        />
+      )}
     </div>
   );
 };

@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 const RoomList = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [floorFilter, setFloorFilter] = useState("all"); // Lọc theo tầng
   const navigate = useNavigate();
   
   // Lấy tên user từ localStorage để hiển thị
@@ -90,6 +91,17 @@ const RoomList = () => {
     }
   };
 
+  // Tạo danh sách tầng duy nhất từ rooms
+  const floorOptions = Array.from(
+    new Set(rooms.map((room) => room.floor || 1))
+  ).sort((a, b) => a - b);
+
+  // Áp dụng filter theo tầng
+  const filteredRooms =
+    floorFilter === "all"
+      ? rooms
+      : rooms.filter((room) => String(room.floor || 1) === floorFilter);
+
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
       {/* HEADER CẢI TIẾN */}
@@ -147,8 +159,28 @@ const RoomList = () => {
       {loading ? (
         <p className="text-center text-gray-500">Đang tải dữ liệu...</p>
       ) : (
+        <>
+        {/* Bộ lọc tầng */}
+        <div className="max-w-6xl mx-auto mb-4 flex justify-start">
+          <div className="inline-flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200">
+            <span className="text-sm font-medium text-gray-700">Lọc theo tầng:</span>
+            <select
+              value={floorFilter}
+              onChange={(e) => setFloorFilter(e.target.value)}
+              className="border border-gray-300 text-sm rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Tất cả</option>
+              {floorOptions.map((floor) => (
+                <option key={floor} value={String(floor)}>
+                  Tầng {floor}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
-          {rooms.map((room) => (
+          {filteredRooms.map((room) => (
             <div
               key={room._id}
               className="bg-white p-4 rounded-xl shadow-md border border-gray-200 flex flex-col justify-between hover:shadow-lg transition duration-200 relative group"
@@ -240,6 +272,7 @@ const RoomList = () => {
             </div>
           ))}
         </div>
+        </>
       )}
 
       {/* --- CÁC MODAL --- */}

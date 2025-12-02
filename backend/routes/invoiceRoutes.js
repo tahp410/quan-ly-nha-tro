@@ -7,5 +7,6 @@ router.get("/by-month", invoiceController.getInvoicesByMonth);
 router.get("/summary/month", invoiceController.getPaymentSummaryByMonth);
 // Lưu ý: Route GET /:key đã được tách ra thành route công khai trong server.js
 router.put("/:id/pay", invoiceController.updatePaymentStatus);
+router.put("/:id", invoiceController.updateInvoice); // Sửa hóa đơn
 router.get("/room/:roomId", invoiceController.getRoomHistory);
 module.exports = router;

@@ -17,6 +17,18 @@ exports.createInvoice = async (req, res) => {
     if (!room) return res.status(404).json({ message: "Không tìm thấy phòng" });
     if (!config) return res.status(400).json({ message: "Chưa cài bảng giá điện nước! Hãy cài đặt trước." });
 
+    // Không cho tạo hóa đơn trùng tháng khi đã có hóa đơn PAID cho phòng đó
+    const existingPaidInvoice = await Invoice.findOne({
+      room: roomId,
+      month,
+      status: "PAID",
+    });
+    if (existingPaidInvoice) {
+      return res
+        .status(400)
+        .json({ message: "Tháng này đã có hóa đơn ĐÃ THANH TOÁN. Không thể tạo thêm." });
+    }
+
     let invoiceTenant = null;
     if (tenantId) {
       invoiceTenant = await Tenant.findById(tenantId);
@@ -99,6 +111,82 @@ exports.createInvoice = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ message: "Lỗi tính tiền", error: error.message });
+  }
+};
+
+// API: Sửa hóa đơn (chỉ nên dùng khi nhập sai chỉ số / phụ phí)
+exports.updateInvoice = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newElec, newWater, additionalFees } = req.body;
+
+    const invoice = await Invoice.findById(id).populate("room");
+    const config = await Config.findOne({ isActive: true });
+
+    if (!invoice) {
+      return res.status(404).json({ message: "Không tìm thấy hóa đơn" });
+    }
+
+    if (!config) {
+      return res.status(400).json({ message: "Chưa cài bảng giá điện nước! Hãy cài đặt trước." });
+    }
+
+    // Không cho sửa hóa đơn đã thanh toán
+    if (invoice.status === "PAID") {
+      return res
+        .status(400)
+        .json({ message: "Hóa đơn đã thanh toán, không được phép sửa." });
+    }
+
+    const room = invoice.room;
+
+    // Lấy số cũ từ chính hóa đơn (không dùng lastReadings nữa)
+    const oldElec = invoice.electricity.old;
+    const oldWater = invoice.water.old;
+
+    if (newElec < oldElec || newWater < oldWater) {
+      return res.status(400).json({ message: "Chỉ số mới phải lớn hơn hoặc bằng chỉ số cũ!" });
+    }
+
+    const elecUsage = newElec - oldElec;
+    const waterUsage = newWater - oldWater;
+
+    const elecCost = elecUsage * config.electricityPrice;
+    const waterCost = waterUsage * config.waterPrice;
+
+    let servicesCost = 0;
+    (invoice.services || []).forEach(s => {
+      servicesCost += s.price || 0;
+    });
+
+    const extra = typeof additionalFees === "number" ? additionalFees : invoice.additionalFees || 0;
+    const totalAmount = (invoice.roomPriceSnapshot || room.basePrice || 0) + elecCost + waterCost + servicesCost + extra;
+
+    invoice.electricity = {
+      ...invoice.electricity,
+      new: newElec,
+      usage: elecUsage,
+      total: elecCost,
+      priceSnapshot: config.electricityPrice
+    };
+
+    invoice.water = {
+      ...invoice.water,
+      new: newWater,
+      usage: waterUsage,
+      total: waterCost,
+      priceSnapshot: config.waterPrice
+    };
+
+    invoice.additionalFees = extra;
+    invoice.totalAmount = totalAmount;
+
+    await invoice.save();
+
+    res.json({ success: true, message: "Cập nhật hóa đơn thành công!", data: invoice });
+  } catch (error) {
+    console.error("Error updating invoice:", error);
+    res.status(500).json({ message: "Lỗi sửa hóa đơn", error: error.message });
   }
 };
 
